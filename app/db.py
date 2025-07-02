@@ -1,0 +1,213 @@
+import sqlite3
+import os
+from datetime import datetime
+from typing import List, Dict, Optional
+
+
+class Database:
+    def __init__(self, db_path: str = "data/cloudflare_failover.db"):
+        # Garantir que o diretório existe
+        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+
+        self.db_path = db_path
+        self.init_database()
+
+    def init_database(self):
+        """Inicializa o banco de dados com as tabelas necessárias"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+
+            # Tabela de domínios
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS domains (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    domain_name TEXT NOT NULL UNIQUE,
+                    record_type TEXT NOT NULL,
+                    ttl INTEGER DEFAULT 300,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+
+            # Tabela de links (primário e secundário)
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS links (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    domain_id INTEGER NOT NULL,
+                    link_type TEXT NOT NULL CHECK (link_type IN ('primary', 'secondary')),
+                    ipv4 TEXT,
+                    ipv6 TEXT,
+                    hostname TEXT,
+                    is_active BOOLEAN DEFAULT 1,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (domain_id) REFERENCES domains (id) ON DELETE CASCADE,
+                    UNIQUE(domain_id, link_type)
+                )
+            ''')
+
+            # Tabela de logs de alterações
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS change_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    domain_id INTEGER NOT NULL,
+                    from_link_id INTEGER,
+                    to_link_id INTEGER,
+                    change_type TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    message TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (domain_id) REFERENCES domains (id) ON DELETE CASCADE,
+                    FOREIGN KEY (from_link_id) REFERENCES links (id),
+                    FOREIGN KEY (to_link_id) REFERENCES links (id)
+                )
+            ''')
+
+            # Tabela de configurações
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS settings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    key TEXT NOT NULL UNIQUE,
+                    value TEXT,
+                    description TEXT,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+
+            conn.commit()
+
+    def add_domain(self, domain_name: str, record_type: str, ttl: int = 300) -> int:
+        """Adiciona um novo domínio"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO domains (domain_name, record_type, ttl)
+                VALUES (?, ?, ?)
+            ''', (domain_name, record_type, ttl))
+            conn.commit()
+            return cursor.lastrowid
+
+    def add_link(self, domain_id: int, link_type: str, ipv4: str = None,
+                 ipv6: str = None, hostname: str = None) -> int:
+        """Adiciona um link (primário ou secundário) para um domínio"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO links (domain_id, link_type, ipv4, ipv6, hostname)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (domain_id, link_type, ipv4, ipv6, hostname))
+            conn.commit()
+            return cursor.lastrowid
+
+    def get_domains(self) -> List[Dict]:
+        """Retorna todos os domínios com seus links"""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            cursor.execute('''
+                SELECT d.*, 
+                       p.id as primary_id, p.ipv4 as primary_ipv4, p.ipv6 as primary_ipv6, p.hostname as primary_hostname,
+                       s.id as secondary_id, s.ipv4 as secondary_ipv4, s.ipv6 as secondary_ipv6, s.hostname as secondary_hostname
+                FROM domains d
+                LEFT JOIN links p ON d.id = p.domain_id AND p.link_type = 'primary'
+                LEFT JOIN links s ON d.id = s.domain_id AND s.link_type = 'secondary'
+                ORDER BY d.domain_name
+            ''')
+
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+
+    def get_domain_by_id(self, domain_id: int) -> Optional[Dict]:
+        """Retorna um domínio específico por ID"""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            cursor.execute('''
+                SELECT d.*, 
+                       p.id as primary_id, p.ipv4 as primary_ipv4, p.ipv6 as primary_ipv6, p.hostname as primary_hostname,
+                       s.id as secondary_id, s.ipv4 as secondary_ipv4, s.ipv6 as secondary_ipv6, s.hostname as secondary_hostname
+                FROM domains d
+                LEFT JOIN links p ON d.id = p.domain_id AND p.link_type = 'primary'
+                LEFT JOIN links s ON d.id = s.domain_id AND s.link_type = 'secondary'
+                WHERE d.id = ?
+            ''', (domain_id,))
+
+            row = cursor.fetchone()
+            return dict(row) if row else None
+
+    def update_domain(self, domain_id: int, domain_name: str, record_type: str, ttl: int):
+        """Atualiza um domínio"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                UPDATE domains 
+                SET domain_name = ?, record_type = ?, ttl = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+            ''', (domain_name, record_type, ttl, domain_id))
+            conn.commit()
+
+    def update_link(self, link_id: int, ipv4: str = None, ipv6: str = None, hostname: str = None):
+        """Atualiza um link"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                UPDATE links 
+                SET ipv4 = ?, ipv6 = ?, hostname = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+            ''', (ipv4, ipv6, hostname, link_id))
+            conn.commit()
+
+    def delete_domain(self, domain_id: int):
+        """Deleta um domínio e todos os seus links"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM domains WHERE id = ?', (domain_id,))
+            conn.commit()
+
+    def add_change_log(self, domain_id: int, from_link_id: int, to_link_id: int,
+                       change_type: str, status: str, message: str = None):
+        """Adiciona um log de alteração"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO change_logs (domain_id, from_link_id, to_link_id, change_type, status, message)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (domain_id, from_link_id, to_link_id, change_type, status, message))
+            conn.commit()
+
+    def get_change_logs(self, limit: int = 50) -> List[Dict]:
+        """Retorna os logs de alterações"""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            cursor.execute('''
+                SELECT cl.*, d.domain_name
+                FROM change_logs cl
+                JOIN domains d ON cl.domain_id = d.id
+                ORDER BY cl.created_at DESC
+                LIMIT ?
+            ''', (limit,))
+
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+
+    def get_setting(self, key: str) -> Optional[str]:
+        """Retorna uma configuração"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT value FROM settings WHERE key = ?', (key,))
+            result = cursor.fetchone()
+            return result[0] if result else None
+
+    def set_setting(self, key: str, value: str, description: str = None):
+        """Define uma configuração"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT OR REPLACE INTO settings (key, value, description, updated_at)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            ''', (key, value, description))
+            conn.commit()
