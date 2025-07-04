@@ -7,8 +7,8 @@ from typing import Dict, List, Optional
 from datetime import datetime
 import logging
 
-from db import Database
-from cloudflare import CloudflareAPI
+from .db import Database
+from .cloudflare import CloudflareAPI
 
 
 class LinkMonitor:

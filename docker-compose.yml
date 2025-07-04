@@ -1,13 +1,16 @@
 services:
-  cloudflare-failover:
-    build: .
-    ports:
-      - "8501:8501"
+  web:
+    container_name: cloudflare-failover500
+    build:
+      args:
+        - FLASK_ENV=dev
+      context: .
     volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
+      - ./src:/src
     environment:
-      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
-      - CLOUDFLARE_ZONE_ID=${CLOUDFLARE_ZONE_ID}
-    restart: unless-stopped
-    container_name: cloudflare-failover-app 
+      - FLASK_APP=main.py
+      - FLASK_ENV=development
+      - TEMPLATE_AUTO_RELOAD=True
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "8010:8000"

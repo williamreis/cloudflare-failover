@@ -38,6 +38,8 @@ class Database:
                     ipv4 TEXT,
                     ipv6 TEXT,
                     hostname TEXT,
+                    record_type TEXT,
+                    comment TEXT,
                     is_active BOOLEAN DEFAULT 1,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -88,14 +90,14 @@ class Database:
             return cursor.lastrowid
 
     def add_link(self, domain_id: int, link_type: str, ipv4: str = None,
-                 ipv6: str = None, hostname: str = None) -> int:
+                 ipv6: str = None, hostname: str = None, record_type: str = 'A', comment: str = None) -> int:
         """Adiciona um link (primário ou secundário) para um domínio"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO links (domain_id, link_type, ipv4, ipv6, hostname)
-                VALUES (?, ?, ?, ?, ?)
-            ''', (domain_id, link_type, ipv4, ipv6, hostname))
+                INSERT INTO links (domain_id, link_type, ipv4, ipv6, hostname, record_type, comment)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (domain_id, link_type, ipv4, ipv6, hostname, record_type, comment))
             conn.commit()
             return cursor.lastrowid
 
@@ -148,15 +150,15 @@ class Database:
             ''', (domain_name, record_type, ttl, domain_id))
             conn.commit()
 
-    def update_link(self, link_id: int, ipv4: str = None, ipv6: str = None, hostname: str = None):
+    def update_link(self, link_id: int, ipv4: str = None, ipv6: str = None, hostname: str = None, record_type: str = 'A', comment: str = None):
         """Atualiza um link"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute('''
                 UPDATE links 
-                SET ipv4 = ?, ipv6 = ?, hostname = ?, updated_at = CURRENT_TIMESTAMP
+                SET ipv4 = ?, ipv6 = ?, hostname = ?, record_type = ?, comment = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
-            ''', (ipv4, ipv6, hostname, link_id))
+            ''', (ipv4, ipv6, hostname, record_type, comment, link_id))
             conn.commit()
 
     def delete_domain(self, domain_id: int):
@@ -210,4 +212,27 @@ class Database:
                 INSERT OR REPLACE INTO settings (key, value, description, updated_at)
                 VALUES (?, ?, ?, CURRENT_TIMESTAMP)
             ''', (key, value, description))
+            conn.commit()
+
+    def swap_primary_secondary_links(self, domain_id: int):
+        """Troca os dados dos links primário e secundário de um domínio"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            # Busca os links primário e secundário
+            cursor.execute('SELECT id, ipv4, ipv6, hostname FROM links WHERE domain_id = ? AND link_type = "primary"', (domain_id,))
+            primary = cursor.fetchone()
+            cursor.execute('SELECT id, ipv4, ipv6, hostname FROM links WHERE domain_id = ? AND link_type = "secondary"', (domain_id,))
+            secondary = cursor.fetchone()
+            if not primary or not secondary:
+                raise Exception('Links primário e/ou secundário não encontrados para este domínio.')
+            # Troca os dados
+            cursor.execute('UPDATE links SET ipv4 = ?, ipv6 = ?, hostname = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', (secondary[1], secondary[2], secondary[3], primary[0]))
+            cursor.execute('UPDATE links SET ipv4 = ?, ipv6 = ?, hostname = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', (primary[1], primary[2], primary[3], secondary[0]))
+            conn.commit()
+
+    def delete_log(self, log_id: int):
+        """Remove um log pelo id."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM change_logs WHERE id = ?', (log_id,))
             conn.commit()

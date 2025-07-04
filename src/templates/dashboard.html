@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Cloudflare Failover{% endblock %}
+
+{% block content %}
+<!-- Page Heading -->
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Dashboard</h1>
+    <a href="/domains" class="d-none d-sm-inline-block btn btn-primary shadow-sm">
+        <i class="fas fa-plus fa-sm text-white-50"></i> Adicionar Domínio
+    </a>
+</div>
+
+<!-- Content Row - Stats Cards -->
+<div class="row">
+    <!-- Total Domínios -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card primary h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total de Domínios
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ domains|length }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-globe fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Domínios com Primário Ativo -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card success h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Primário Ativo
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {{ domains|selectattr('primary_active', 'equalto', True)|list|length }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Domínios com Secundário Ativo -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card warning h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Secundário Ativo
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {{ domains|selectattr('secondary_active', 'equalto', True)|list|length }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Domínios com Problemas -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card danger h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                            Com Problemas
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {{ domains|selectattr('primary_active', 'equalto', False)|selectattr('secondary_active', 'equalto', False)|list|length }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-times-circle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Content Row - Charts and Tables -->
+<div class="row">
+    <!-- Domínios Recentes -->
+    <div class="col-xl-8 col-lg-7">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Domínios Recentes</h6>
+                <a href="/domains" class="btn btn-sm btn-primary shadow-sm">
+                    Ver Todos
+                </a>
+            </div>
+            <div class="card-body">
+                {% if domains %}
+                <div class="table-responsive">
+                    <table class="table table-bordered" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Domínio</th>
+                                <th>Tipo</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for domain in domains[:5] %}
+                            <tr>
+                                <td>
+                                    <strong>{{ domain.domain_name }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">{{ domain.record_type }}</span>
+                                </td>
+                                <td>
+                                    {% if domain.primary_active %}
+                                        <span class="badge bg-success">Primário Ativo</span>
+                                    {% elif domain.secondary_active %}
+                                        <span class="badge bg-warning">Secundário Ativo</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inativo</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="/domains/edit/{{ domain.id }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-globe fa-3x text-gray-300 mb-3"></i>
+                    <p class="text-gray-500">Nenhum domínio cadastrado ainda.</p>
+                    <a href="/domains" class="btn btn-primary">Adicionar Primeiro Domínio</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs Recentes -->
+    <div class="col-xl-4 col-lg-5">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Logs Recentes</h6>
+                <a href="/logs" class="btn btn-sm btn-primary shadow-sm">
+                    Ver Todos
+                </a>
+            </div>
+            <div class="card-body">
+                {% if logs %}
+                <div class="list-group list-group-flush">
+                    {% for log in logs[:5] %}
+                    <div class="list-group-item px-0">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ log.domain_name }}</h6>
+                            <small class="text-muted">{{ log.created_at.strftime('%H:%M') }}</small>
+                        </div>
+                        <p class="mb-1">{{ log.message }}</p>
+                        <small class="text-muted">{{ log.created_at.strftime('%d/%m/%Y') }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-list fa-3x text-gray-300 mb-3"></i>
+                    <p class="text-gray-500">Nenhum log disponível.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Content Row - Status Overview -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Visão Geral do Sistema</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Status do Cloudflare</h5>
+                        {% if cloudflare_error %}
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Erro:</strong> {{ cloudflare_error }}
+                        </div>
+                        {% else %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i>
+                            <strong>Conectado</strong> - API do Cloudflare funcionando normalmente
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Monitoramento</h5>
+                        {% if monitor %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i>
+                            <strong>Ativo</strong> - Sistema de monitoramento funcionando
+                        </div>
+                        {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Inativo</strong> - Monitoramento não disponível
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block title %}Logs - Cloudflare Failover{% endblock %}
+
+{% block content %}
+<!-- Page Heading -->
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Logs do Sistema</h1>
+    <div class="d-none d-sm-inline-block">
+        <button class="btn btn-outline-primary shadow-sm" onclick="window.print()">
+            <i class="fas fa-print fa-sm text-white-50"></i> Imprimir
+        </button>
+        <a href="/domains" class="btn btn-primary shadow-sm">
+            <i class="fas fa-globe fa-sm text-white-50"></i> Voltar aos Domínios
+        </a>
+    </div>
+</div>
+
+<!-- Content Row -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Histórico de Alterações</h6>
+                <div class="dropdown no-arrow">
+                    <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown">
+                        <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in">
+                        <div class="dropdown-header">Ações:</div>
+                        <a class="dropdown-item" href="#" onclick="window.print()">
+                            <i class="fas fa-print fa-sm fa-fw mr-2 text-gray-400"></i>
+                            Imprimir Logs
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="/domains">
+                            <i class="fas fa-globe fa-sm fa-fw mr-2 text-gray-400"></i>
+                            Gerenciar Domínios
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if logs %}
+                <div class="table-responsive">
+                    <table class="table table-bordered" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Data/Hora</th>
+                                <th>Domínio</th>
+                                <th>Mensagem</th>
+                                <th>Tipo</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in logs %}
+                            <tr>
+                                <td>
+                                    <div class="small">
+                                        <strong>{{ log.created_at }}</strong>
+                                    </div>
+                                    <div class="small text-muted">
+                                        {{ log.created_at }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">{{ log.domain_name }}</span>
+                                </td>
+                                <td>
+                                    <div class="small">
+                                        {{ log.message }}
+                                    </div>
+                                    <form action="{{ url_for('delete_log', log_id=log.id) }}" method="post" style="display:inline;">
+                                        <button class="btn btn-sm btn-danger" type="submit" title="Excluir log" onclick="return confirm('Tem certeza que deseja excluir este log?');">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                                <td>
+                                    {% if 'failover' in log.message.lower() %}
+                                        <span class="badge bg-warning">Failover</span>
+                                    {% elif 'error' in log.message.lower() %}
+                                        <span class="badge bg-danger">Erro</span>
+                                    {% elif 'success' in log.message.lower() %}
+                                        <span class="badge bg-success">Sucesso</span>
+                                    {% else %}
+                                        <span class="badge bg-info">Info</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                {% if logs|length >= 100 %}
+                <div class="d-flex justify-content-center mt-4">
+                    <nav aria-label="Navegação de logs">
+                        <ul class="pagination">
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" tabindex="-1">Anterior</a>
+                            </li>
+                            <li class="page-item active">
+                                <a class="page-link" href="#">1</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="#">2</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="#">3</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="#">Próximo</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+                
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-list fa-3x text-gray-300 mb-3"></i>
+                    <p class="text-gray-500">Nenhum log disponível ainda.</p>
+                    <p class="text-muted small">Os logs aparecerão aqui quando houver alterações nos domínios ou failovers.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Row -->
+<div class="row">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card info h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Total de Logs
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ logs|length }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-list fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card warning h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Failovers
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ failover_count }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-exchange-alt fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card danger h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                            Erros
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ error_count }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card success h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Sucessos
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ success_count }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

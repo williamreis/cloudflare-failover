@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}Editar Domínio - Cloudflare Failover{% endblock %}
+{% block content %}
+<h1 class="mb-4">Editar Domínio</h1>
+<form method="post" class="mb-4">
+    <div class="row g-2 mb-2">
+        <div class="col-md-9">
+            <input type="text" name="domain_name" class="form-control" placeholder="Nome do Domínio" value="{{ domain.domain_name }}" required>
+        </div>
+        <div class="col-md-3">
+            <input type="number" name="ttl" class="form-control" placeholder="TTL" value="{{ domain.ttl }}" min="60" max="86400">
+        </div>
+    </div>
+    <div class="row g-2 mb-2">
+        <div class="col-md-12">
+            <input type="text" class="form-control mt-1" name="comment" placeholder="Comentário" value="{{ domain.comment or '' }}">
+        </div>
+    </div>
+    <h6><i class="fas fa-server text-success"></i> Link Primário</h6>
+    <div class="row g-2 mb-2">
+        <div class="col-md-6">
+            <input type="text" name="primary_ipv4" class="form-control" placeholder="IPv4 Primário" value="{{ domain.primary_ipv4 or '' }}">
+            <select class="form-select mt-1" name="primary_ipv4_type">
+                <option value="A" {% if domain.primary_ipv4_type == 'A' %}selected{% endif %}>A</option>
+                <option value="AAAA" {% if domain.primary_ipv4_type == 'AAAA' %}selected{% endif %}>AAAA</option>
+                <option value="CNAME" {% if domain.primary_ipv4_type == 'CNAME' %}selected{% endif %}>CNAME</option>
+            </select>
+        </div>
+        <div class="col-md-6">
+            <input type="text" name="primary_ipv6" class="form-control" placeholder="IPv6 Primário" value="{{ domain.primary_ipv6 or '' }}">
+            <select class="form-select mt-1" name="primary_ipv6_type">
+                <option value="A" {% if domain.primary_ipv6_type == 'A' %}selected{% endif %}>A</option>
+                <option value="AAAA" {% if domain.primary_ipv6_type == 'AAAA' %}selected{% endif %}>AAAA</option>
+                <option value="CNAME" {% if domain.primary_ipv6_type == 'CNAME' %}selected{% endif %}>CNAME</option>
+            </select>
+        </div>
+    </div>
+    <h6><i class="fas fa-server text-warning"></i> Link Secundário</h6>
+    <div class="row g-2 mb-2">
+        <div class="col-md-6">
+            <input type="text" name="secondary_ipv4" class="form-control" placeholder="IPv4 Secundário" value="{{ domain.secondary_ipv4 or '' }}">
+            <select class="form-select mt-1" name="secondary_ipv4_type">
+                <option value="A" {% if domain.secondary_ipv4_type == 'A' %}selected{% endif %}>A</option>
+                <option value="AAAA" {% if domain.secondary_ipv4_type == 'AAAA' %}selected{% endif %}>AAAA</option>
+                <option value="CNAME" {% if domain.secondary_ipv4_type == 'CNAME' %}selected{% endif %}>CNAME</option>
+            </select>
+        </div>
+        <div class="col-md-6">
+            <input type="text" name="secondary_ipv6" class="form-control" placeholder="IPv6 Secundário" value="{{ domain.secondary_ipv6 or '' }}">
+            <select class="form-select mt-1" name="secondary_ipv6_type">
+                <option value="A" {% if domain.secondary_ipv6_type == 'A' %}selected{% endif %}>A</option>
+                <option value="AAAA" {% if domain.secondary_ipv6_type == 'AAAA' %}selected{% endif %}>AAAA</option>
+                <option value="CNAME" {% if domain.secondary_ipv6_type == 'CNAME' %}selected{% endif %}>CNAME</option>
+            </select>
+        </div>
+    </div>
+    <div class="row g-2 mb-2">
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-success">Salvar</button>
+            <a href="{{ url_for('manage_domains') }}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </div>
+</form>
+{% endblock %} 

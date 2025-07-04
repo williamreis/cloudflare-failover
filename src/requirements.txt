@@ -1,0 +1,7 @@
+Flask
+Flask-WTF
+WTForms
+plotly
+python-dotenv
+requests
+Flask-Login
