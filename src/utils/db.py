@@ -76,18 +76,18 @@ class Database:
 
             conn.commit()
 
-    def add_domain(self, domain_name: str, record_type: str, ttl: int = 300) -> int:
+    def add_domain(self, domain_name: str, comment: str = None, ttl: int = 300) -> int:
         """Adiciona um novo domínio"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO domain (domain_name, record_type, ttl)
+                INSERT INTO domain (domain_name, comment, ttl)
                 VALUES (?, ?, ?)
-            ''', (domain_name, record_type, ttl))
+            ''', (domain_name, comment, ttl))
             conn.commit()
             return cursor.lastrowid
 
-    def add_link(self, domain_id: int, link_type: str, ipaddress: str = None, hostname: str = None, record_type: str = 'A') -> int:
+    def add_dns(self, domain_id: int, link_type: str, ipaddress: str = None, hostname: str = None, record_type: str = 'A') -> int:
         """Adiciona um link (primário ou secundário) para um domínio"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
@@ -136,18 +136,18 @@ class Database:
             row = cursor.fetchone()
             return dict(row) if row else None
 
-    def update_domain(self, domain_id: int, domain_name: str, record_type: str, ttl: int):
+    def update_domain(self, domain_id: int, domain_name: str, comment: str = None, ttl: int = 300):
         """Atualiza um domínio"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute('''
                 UPDATE domain 
-                SET domain_name = ?, record_type = ?, ttl = ?, updated_at = CURRENT_TIMESTAMP
+                SET domain_name = ?, comment = ?, ttl = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
-            ''', (domain_name, record_type, ttl, domain_id))
+            ''', (domain_name, comment, ttl, domain_id))
             conn.commit()
 
-    def update_link(self, link_id: int, ipaddress: str = None, hostname: str = None, record_type: str = 'A'):
+    def update_dns(self, link_id: int, ipaddress: str = None, hostname: str = None, record_type: str = 'A'):
         """Atualiza um link"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
