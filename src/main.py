@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'sua_chave_secreta_aqui_123456789'  # Importante para sessões
+app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY')
 app.template_folder = 'templates'
 app.static_folder = 'static'
 
