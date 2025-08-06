@@ -127,8 +127,8 @@ class LinkMonitor:
             # Registrar log
             self.db.add_change_log(
                 domain_id=domain_data['id'],
-                from_link_id=domain_data.get('primary_id'),
-                to_link_id=domain_data.get('secondary_id'),
+                dns_from_id=domain_data.get('primary_id'),
+                dns_to_id=domain_data.get('secondary_id'),
                 change_type='failover',
                 status='success',
                 message=f"Failover executado para {secondary_content}"
@@ -143,8 +143,8 @@ class LinkMonitor:
             # Registrar log de erro
             self.db.add_change_log(
                 domain_id=domain_data['id'],
-                from_link_id=domain_data.get('primary_id'),
-                to_link_id=domain_data.get('secondary_id'),
+                dns_from_id=domain_data.get('primary_id'),
+                dns_to_id=domain_data.get('secondary_id'),
                 change_type='failover',
                 status='error',
                 message=str(e)
@@ -183,8 +183,8 @@ class LinkMonitor:
             # Registrar log
             self.db.add_change_log(
                 domain_id=domain_data['id'],
-                from_link_id=domain_data.get('secondary_id'),
-                to_link_id=domain_data.get('primary_id'),
+                dns_from_id=domain_data.get('secondary_id'),
+                dns_to_id=domain_data.get('primary_id'),
                 change_type='failback',
                 status='success',
                 message=f"Failback executado para {primary_content}"
@@ -199,8 +199,8 @@ class LinkMonitor:
             # Registrar log de erro
             self.db.add_change_log(
                 domain_id=domain_data['id'],
-                from_link_id=domain_data.get('secondary_id'),
-                to_link_id=domain_data.get('primary_id'),
+                dns_from_id=domain_data.get('secondary_id'),
+                dns_to_id=domain_data.get('primary_id'),
                 change_type='failback',
                 status='error',
                 message=str(e)

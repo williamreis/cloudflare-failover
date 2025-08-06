@@ -51,15 +51,15 @@ class Database:
                 CREATE TABLE IF NOT EXISTS change_logs (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     domain_id INTEGER NOT NULL,
-                    from_link_id INTEGER,
-                    to_link_id INTEGER,
+                    dns_from_id INTEGER,
+                    dns_to_id INTEGER,
                     change_type TEXT NOT NULL,
                     status TEXT NOT NULL,
                     message TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (domain_id) REFERENCES domains (id) ON DELETE CASCADE,
-                    FOREIGN KEY (from_link_id) REFERENCES domain_dns (id),
-                    FOREIGN KEY (to_link_id) REFERENCES domain_dns (id)
+                    FOREIGN KEY (dns_from_id) REFERENCES domain_dns (id),
+                    FOREIGN KEY (dns_to_id) REFERENCES domain_dns (id)
                 )
             ''')
 
@@ -165,15 +165,15 @@ class Database:
             cursor.execute('DELETE FROM domains WHERE id = ?', (domain_id,))
             conn.commit()
 
-    def add_change_log(self, domain_id: int, from_link_id: int, to_link_id: int,
+    def add_change_log(self, domain_id: int, dns_from_id: int, dns_to_id: int,
                        change_type: str, status: str, message: str = None):
         """Adiciona um log de alteração"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO change_logs (domain_id, from_link_id, to_link_id, change_type, status, message)
+                INSERT INTO change_logs (domain_id, dns_from_id, dns_to_id, change_type, status, message)
                 VALUES (?, ?, ?, ?, ?, ?)
-            ''', (domain_id, from_link_id, to_link_id, change_type, status, message))
+            ''', (domain_id, dns_from_id, dns_to_id, change_type, status, message))
             conn.commit()
 
     def get_change_logs(self, limit: int = 50) -> List[Dict]:
