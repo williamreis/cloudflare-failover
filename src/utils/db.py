@@ -29,9 +29,9 @@ class Database:
                 )
             ''')
 
-            # Tabela de links (primário e secundário)
+            # Tabela de domain_dns (primário e secundário)
             cursor.execute('''
-                CREATE TABLE IF NOT EXISTS links (
+                CREATE TABLE IF NOT EXISTS domain_dns (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     domain_id INTEGER NOT NULL,
                     link_type TEXT NOT NULL CHECK (link_type IN ('primary', 'secondary')),
@@ -58,8 +58,8 @@ class Database:
                     message TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (domain_id) REFERENCES domains (id) ON DELETE CASCADE,
-                    FOREIGN KEY (from_link_id) REFERENCES links (id),
-                    FOREIGN KEY (to_link_id) REFERENCES links (id)
+                    FOREIGN KEY (from_link_id) REFERENCES domain_dns (id),
+                    FOREIGN KEY (to_link_id) REFERENCES domain_dns (id)
                 )
             ''')
 
@@ -92,14 +92,14 @@ class Database:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO links (domain_id, link_type, ipaddress, hostname, record_type)
+                INSERT INTO domain_dns (domain_id, link_type, ipaddress, hostname, record_type)
                 VALUES (?, ?, ?, ?, ?)
             ''', (domain_id, link_type, ipaddress, hostname, record_type))
             conn.commit()
             return cursor.lastrowid
 
     def get_domains(self) -> List[Dict]:
-        """Retorna todos os domínios com seus links"""
+        """Retorna todos os domínios com seus domain_dns"""
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
@@ -109,8 +109,8 @@ class Database:
                        p.id as primary_id, p.ipaddress as primary_ipv4, p.hostname as primary_hostname,
                        s.id as secondary_id, s.ipaddress as secondary_ipv4, s.hostname as secondary_hostname
                 FROM domains d
-                LEFT JOIN links p ON d.id = p.domain_id AND p.link_type = 'primary'
-                LEFT JOIN links s ON d.id = s.domain_id AND s.link_type = 'secondary'
+                LEFT JOIN domain_dns p ON d.id = p.domain_id AND p.link_type = 'primary'
+                LEFT JOIN domain_dns s ON d.id = s.domain_id AND s.link_type = 'secondary'
                 ORDER BY d.domain_name
             ''')
 
@@ -128,8 +128,8 @@ class Database:
                        p.id as primary_id, p.ipaddress as primary_ipv4, p.hostname as primary_hostname,
                        s.id as secondary_id, s.ipaddress as secondary_ipv4, s.hostname as secondary_hostname
                 FROM domains d
-                LEFT JOIN links p ON d.id = p.domain_id AND p.link_type = 'primary'
-                LEFT JOIN links s ON d.id = s.domain_id AND s.link_type = 'secondary'
+                LEFT JOIN domain_dns p ON d.id = p.domain_id AND p.link_type = 'primary'
+                LEFT JOIN domain_dns s ON d.id = s.domain_id AND s.link_type = 'secondary'
                 WHERE d.id = ?
             ''', (domain_id,))
 
@@ -152,14 +152,14 @@ class Database:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                UPDATE links 
+                UPDATE domain_dns 
                 SET ipaddress = ?, hostname = ?, record_type = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
             ''', (ipaddress, hostname, record_type, link_id))
             conn.commit()
 
     def delete_domain(self, domain_id: int):
-        """Deleta um domínio e todos os seus links"""
+        """Deleta um domínio e todos os seus dns"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute('DELETE FROM domains WHERE id = ?', (domain_id,))
@@ -211,20 +211,20 @@ class Database:
             ''', (key, value, description))
             conn.commit()
 
-    def swap_primary_secondary_links(self, domain_id: int):
-        """Troca os dados dos links primário e secundário de um domínio"""
+    def swap_primary_secondary_domain_dns(self, domain_id: int):
+        """Troca os dados dos dns primário e secundário de um domínio"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
-            # Busca os links primário e secundário
-            cursor.execute('SELECT id, ipaddress, hostname FROM links WHERE domain_id = ? AND link_type = "primary"', (domain_id,))
+            # Busca os dns primário e secundário
+            cursor.execute('SELECT id, ipaddress, hostname FROM domain_dns WHERE domain_id = ? AND link_type = "primary"', (domain_id,))
             primary = cursor.fetchone()
-            cursor.execute('SELECT id, ipaddress, hostname FROM links WHERE domain_id = ? AND link_type = "secondary"', (domain_id,))
+            cursor.execute('SELECT id, ipaddress, hostname FROM domain_dns WHERE domain_id = ? AND link_type = "secondary"', (domain_id,))
             secondary = cursor.fetchone()
             if not primary or not secondary:
                 raise Exception('Links primário e/ou secundário não encontrados para este domínio.')
             # Troca os dados
-            cursor.execute('UPDATE links SET ipaddress = ?, hostname = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', (secondary[1], secondary[2], primary[0]))
-            cursor.execute('UPDATE links SET ipaddress = ?, hostname = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', (primary[1], primary[2], secondary[0]))
+            cursor.execute('UPDATE domain_dns SET ipaddress = ?, hostname = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', (secondary[1], secondary[2], primary[0]))
+            cursor.execute('UPDATE domain_dns SET ipaddress = ?, hostname = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', (primary[1], primary[2], secondary[0]))
             conn.commit()
 
     def delete_log(self, log_id: int):
