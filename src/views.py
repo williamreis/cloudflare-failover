@@ -58,7 +58,7 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        
+
         # Aqui você pode implementar verificação no banco de dados
         # Por enquanto, usando credenciais fixas
         if username == 'admin' and password == 'admin123':
@@ -68,7 +68,7 @@ def login():
             return redirect(url_for('dashboard'))
         else:
             return render_template('login.html', error='Usuário ou senha inválidos')
-    
+
     return render_template('login.html')
 
 @app.route('/logout')
@@ -107,43 +107,40 @@ def manage_domains():
         domain_name = request.form.get('domain_name')
         record_type = request.form.get('record_type')
         ttl = request.form.get('ttl', 300)
+        comment = request.form.get('comment')
+
         # Primário
         primary_ipv4 = request.form.get('primary_ipv4')
         primary_ipv4_type = request.form.get('primary_ipv4_type')
-        primary_ipv4_comment = request.form.get('primary_ipv4_comment')
         primary_ipv6 = request.form.get('primary_ipv6')
         primary_ipv6_type = request.form.get('primary_ipv6_type')
-        primary_ipv6_comment = request.form.get('primary_ipv6_comment')
         primary_hostname = request.form.get('primary_hostname')
         primary_hostname_type = request.form.get('primary_hostname_type')
-        primary_hostname_comment = request.form.get('primary_hostname_comment')
+
         # Secundário
         secondary_ipv4 = request.form.get('secondary_ipv4')
         secondary_ipv4_type = request.form.get('secondary_ipv4_type')
-        secondary_ipv4_comment = request.form.get('secondary_ipv4_comment')
         secondary_ipv6 = request.form.get('secondary_ipv6')
         secondary_ipv6_type = request.form.get('secondary_ipv6_type')
-        secondary_ipv6_comment = request.form.get('secondary_ipv6_comment')
         secondary_hostname = request.form.get('secondary_hostname')
         secondary_hostname_type = request.form.get('secondary_hostname_type')
-        secondary_hostname_comment = request.form.get('secondary_hostname_comment')
         try:
             domain_id = db.add_domain(domain_name, record_type, int(ttl))
             # Adicionar link primário se algum campo preenchido
             if primary_ipv4 or primary_ipv6 or primary_hostname:
-                db.add_link(domain_id, "primary", primary_ipv4, primary_ipv6, primary_hostname, primary_ipv4_type or 'A', primary_ipv4_comment)
-                db.add_link(domain_id, "primary", None, primary_ipv6, None, primary_ipv6_type or 'AAAA', primary_ipv6_comment)
-                db.add_link(domain_id, "primary", None, None, primary_hostname, primary_hostname_type or 'CNAME', primary_hostname_comment)
+                db.add_link(domain_id, "primary", primary_ipv4, primary_ipv6, primary_hostname, primary_ipv4_type or 'A')
+                db.add_link(domain_id, "primary", None, primary_ipv6, None, primary_ipv6_type or 'AAAA')
+                db.add_link(domain_id, "primary", None, None, primary_hostname, primary_hostname_type or 'CNAME')
             # Adicionar link secundário se algum campo preenchido
             if secondary_ipv4 or secondary_ipv6 or secondary_hostname:
-                db.add_link(domain_id, "secondary", secondary_ipv4, secondary_ipv6, secondary_hostname, secondary_ipv4_type or 'A', secondary_ipv4_comment)
-                db.add_link(domain_id, "secondary", None, secondary_ipv6, None, secondary_ipv6_type or 'AAAA', secondary_ipv6_comment)
-                db.add_link(domain_id, "secondary", None, None, secondary_hostname, secondary_hostname_type or 'CNAME', secondary_hostname_comment)
+                db.add_link(domain_id, "secondary", secondary_ipv4, secondary_ipv6, secondary_hostname, secondary_ipv4_type or 'A')
+                db.add_link(domain_id, "secondary", None, secondary_ipv6, None, secondary_ipv6_type or 'AAAA')
+                db.add_link(domain_id, "secondary", None, None, secondary_hostname, secondary_hostname_type or 'CNAME')
             # Sincronizar com Cloudflare (criar registro DNS)
             if cloudflare:
                 try:
                     if record_type == 'A' and primary_ipv4:
-                        cloudflare.create_dns_record(domain_name, 'A', primary_ipv4, int(ttl))
+                        cloudflare.create_dns_record(domain_name, 'A', primary_ipv4, int(ttl), False, )
                     elif record_type == 'AAAA' and primary_ipv6:
                         cloudflare.create_dns_record(domain_name, 'AAAA', primary_ipv6, int(ttl))
                     elif record_type == 'CNAME' and primary_hostname:
@@ -205,45 +202,39 @@ def edit_domain(domain_id):
         # Primário
         primary_ipv4 = request.form.get('primary_ipv4')
         primary_ipv4_type = request.form.get('primary_ipv4_type')
-        primary_ipv4_comment = request.form.get('primary_ipv4_comment')
         primary_ipv6 = request.form.get('primary_ipv6')
         primary_ipv6_type = request.form.get('primary_ipv6_type')
-        primary_ipv6_comment = request.form.get('primary_ipv6_comment')
         primary_hostname = request.form.get('primary_hostname')
         primary_hostname_type = request.form.get('primary_hostname_type')
-        primary_hostname_comment = request.form.get('primary_hostname_comment')
         # Secundário
         secondary_ipv4 = request.form.get('secondary_ipv4')
         secondary_ipv4_type = request.form.get('secondary_ipv4_type')
-        secondary_ipv4_comment = request.form.get('secondary_ipv4_comment')
         secondary_ipv6 = request.form.get('secondary_ipv6')
         secondary_ipv6_type = request.form.get('secondary_ipv6_type')
-        secondary_ipv6_comment = request.form.get('secondary_ipv6_comment')
         secondary_hostname = request.form.get('secondary_hostname')
         secondary_hostname_type = request.form.get('secondary_hostname_type')
-        secondary_hostname_comment = request.form.get('secondary_hostname_comment')
         try:
             db.update_domain(domain_id, domain_name, record_type, int(ttl))
             # Atualizar link primário
             if domain.get('primary_id'):
-                db.update_link(domain['primary_id'], primary_ipv4, primary_ipv6, primary_hostname, primary_ipv4_type or 'A', primary_ipv4_comment)
-                db.update_link(domain['primary_id'], None, primary_ipv6, None, primary_ipv6_type or 'AAAA', primary_ipv6_comment)
-                db.update_link(domain['primary_id'], None, None, primary_hostname, primary_hostname_type or 'CNAME', primary_hostname_comment)
+                db.update_link(domain['primary_id'], primary_ipv4, primary_ipv6, primary_hostname, primary_ipv4_type or 'A')
+                db.update_link(domain['primary_id'], None, primary_ipv6, None, primary_ipv6_type or 'AAAA')
+                db.update_link(domain['primary_id'], None, None, primary_hostname, primary_hostname_type or 'CNAME')
             else:
                 if primary_ipv4 or primary_ipv6 or primary_hostname:
-                    db.add_link(domain_id, "primary", primary_ipv4, primary_ipv6, primary_hostname, primary_ipv4_type or 'A', primary_ipv4_comment)
-                    db.add_link(domain_id, "primary", None, primary_ipv6, None, primary_ipv6_type or 'AAAA', primary_ipv6_comment)
-                    db.add_link(domain_id, "primary", None, None, primary_hostname, primary_hostname_type or 'CNAME', primary_hostname_comment)
+                    db.add_link(domain_id, "primary", primary_ipv4, primary_ipv6, primary_hostname, primary_ipv4_type or 'A')
+                    db.add_link(domain_id, "primary", None, primary_ipv6, None, primary_ipv6_type or 'AAAA')
+                    db.add_link(domain_id, "primary", None, None, primary_hostname, primary_hostname_type or 'CNAME')
             # Atualizar link secundário
             if domain.get('secondary_id'):
-                db.update_link(domain['secondary_id'], secondary_ipv4, secondary_ipv6, secondary_hostname, secondary_ipv4_type or 'A', secondary_ipv4_comment)
-                db.update_link(domain['secondary_id'], None, secondary_ipv6, None, secondary_ipv6_type or 'AAAA', secondary_ipv6_comment)
-                db.update_link(domain['secondary_id'], None, None, secondary_hostname, secondary_hostname_type or 'CNAME', secondary_hostname_comment)
+                db.update_link(domain['secondary_id'], secondary_ipv4, secondary_ipv6, secondary_hostname, secondary_ipv4_type or 'A')
+                db.update_link(domain['secondary_id'], None, secondary_ipv6, None, secondary_ipv6_type or 'AAAA')
+                db.update_link(domain['secondary_id'], None, None, secondary_hostname, secondary_hostname_type or 'CNAME')
             else:
                 if secondary_ipv4 or secondary_ipv6 or secondary_hostname:
-                    db.add_link(domain_id, "secondary", secondary_ipv4, secondary_ipv6, secondary_hostname, secondary_ipv4_type or 'A', secondary_ipv4_comment)
-                    db.add_link(domain_id, "secondary", None, secondary_ipv6, None, secondary_ipv6_type or 'AAAA', secondary_ipv6_comment)
-                    db.add_link(domain_id, "secondary", None, None, secondary_hostname, secondary_hostname_type or 'CNAME', secondary_hostname_comment)
+                    db.add_link(domain_id, "secondary", secondary_ipv4, secondary_ipv6, secondary_hostname, secondary_ipv4_type or 'A')
+                    db.add_link(domain_id, "secondary", None, secondary_ipv6, None, secondary_ipv6_type or 'AAAA')
+                    db.add_link(domain_id, "secondary", None, None, secondary_hostname, secondary_hostname_type or 'CNAME')
             # Sincronizar com Cloudflare (atualizar registro DNS)
             if cloudflare:
                 try:

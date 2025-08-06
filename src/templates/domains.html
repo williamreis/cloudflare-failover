@@ -61,14 +61,9 @@
                                 </td>
                                 <td>{{ domain.ttl }}s</td>
                                 <td>
-                                    {% if domain.primary_ipv4 %}
+                                    {% if domain.primary_ip %}
                                         <div class="small">
-                                            <i class="fas fa-server text-success"></i> {{ domain.primary_ipv4 }}
-                                        </div>
-                                    {% endif %}
-                                    {% if domain.primary_ipv6 %}
-                                        <div class="small">
-                                            <i class="fas fa-server text-success"></i> {{ domain.primary_ipv6 }}
+                                            <i class="fas fa-server text-success"></i> {{ domain.primary_ip }}
                                         </div>
                                     {% endif %}
                                     {% if domain.primary_hostname %}
@@ -76,27 +71,22 @@
                                             <i class="fas fa-link text-success"></i> {{ domain.primary_hostname }}
                                         </div>
                                     {% endif %}
-                                    {% if not domain.primary_ipv4 and not domain.primary_ipv6 and not domain.primary_hostname %}
+                                    {% if not domain.primary_ip and not domain.primary_hostname %}
                                         <span class="text-muted small">Não configurado</span>
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if domain.secondary_ipv4 %}
+                                    {% if domain.secondary_ip %}
                                         <div class="small">
-                                            <i class="fas fa-server text-warning"></i> {{ domain.secondary_ipv4 }}
+                                            <i class="fas fa-server text-warning"></i> {{ domain.secondary_ip }}
                                         </div>
                                     {% endif %}
-                                    {% if domain.secondary_ipv6 %}
-                                        <div class="small">
-                                            <i class="fas fa-server text-warning"></i> {{ domain.secondary_ipv6 }}
-                                        </div>
-                                    {% endif %}
-                                    {% if domain.secondary_hostname %}
+                                     {% if domain.secondary_hostname %}
                                         <div class="small">
                                             <i class="fas fa-link text-warning"></i> {{ domain.secondary_hostname }}
                                         </div>
                                     {% endif %}
-                                    {% if not domain.secondary_ipv4 and not domain.secondary_ipv6 and not domain.secondary_hostname %}
+                                    {% if not domain.secondary_ip and not domain.secondary_hostname %}
                                         <span class="text-muted small">Não configurado</span>
                                     {% endif %}
                                 </td>
@@ -178,53 +168,41 @@
                     <hr>
                     <h6><i class="fas fa-server text-success"></i> Link Primário</h6>
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-3">
                             <div class="mb-3">
-                                <label for="primary_ipv4" class="form-label">IPv4</label>
-                                <input type="text" class="form-control" id="primary_ipv4" name="primary_ipv4" placeholder="192.168.1.1">
-                                <select class="form-select mt-1" name="primary_ipv4_type">
+                                <label for="primary_ip" class="form-label">Tipo</label>
+                                <select class="form-select mt-1" name="primary_type">
                                     <option value="A">A</option>
                                     <option value="AAAA">AAAA</option>
                                     <option value="CNAME">CNAME</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-9">
                             <div class="mb-3">
-                                <label for="primary_ipv6" class="form-label">IPv6</label>
-                                <input type="text" class="form-control" id="primary_ipv6" name="primary_ipv6" placeholder="2001:db8::1">
-                                <select class="form-select mt-1" name="primary_ipv6_type">
-                                    <option value="A">A</option>
-                                    <option value="AAAA">AAAA</option>
-                                    <option value="CNAME">CNAME</option>
-                                </select>
+                                <label for="primary_ip" class="form-label">IP Address</label>
+                                <input type="text" class="form-control" id="primary_ip" name="primary_ip" placeholder="192.168.1.1">
                             </div>
                         </div>
                     </div>
-                    
+
                     <hr>
                     <h6><i class="fas fa-server text-warning"></i> Link Secundário</h6>
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-3">
                             <div class="mb-3">
-                                <label for="secondary_ipv4" class="form-label">IPv4</label>
-                                <input type="text" class="form-control" id="secondary_ipv4" name="secondary_ipv4" placeholder="192.168.1.2">
-                                <select class="form-select mt-1" name="secondary_ipv4_type">
+                                <label for="secondary_ip" class="form-label">Tipo</label>
+                                <select class="form-select mt-1" name="secondary_type">
                                     <option value="A">A</option>
                                     <option value="AAAA">AAAA</option>
                                     <option value="CNAME">CNAME</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-9">
                             <div class="mb-3">
-                                <label for="secondary_ipv6" class="form-label">IPv6</label>
-                                <input type="text" class="form-control" id="secondary_ipv6" name="secondary_ipv6" placeholder="2001:db8::2">
-                                <select class="form-select mt-1" name="secondary_ipv6_type">
-                                    <option value="A">A</option>
-                                    <option value="AAAA">AAAA</option>
-                                    <option value="CNAME">CNAME</option>
-                                </select>
+                                <label for="secondary_ip" class="form-label">IP Address</label>
+                                <input type="text" class="form-control" id="secondary_ip" name="secondary_ip" placeholder="192.168.1.2">
                             </div>
                         </div>
                     </div>
@@ -278,51 +256,34 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="primary_ipv4{{ domain.id }}" class="form-label">IPv4</label>
-                                <input type="text" class="form-control" id="primary_ipv4{{ domain.id }}" name="primary_ipv4" value="{{ domain.primary_ipv4 or '' }}" placeholder="192.168.1.1">
-                                <select class="form-select mt-1" name="primary_ipv4_type">
-                                    <option value="A" {% if domain.primary_ipv4_type == 'A' %}selected{% endif %}>A</option>
-                                    <option value="AAAA" {% if domain.primary_ipv4_type == 'AAAAA' %}selected{% endif %}>AAAAA</option>
-                                    <option value="CNAME" {% if domain.primary_ipv4_type == 'CNAME' %}selected{% endif %}>CNAME</option>
+                                <label for="primary_ip{{ domain.id }}" class="form-label">IP Address</label>
+                                <select class="form-select mt-1" name="primary_type">
+                                    <option value="A" {% if domain.primary_type == 'A' %}selected{% endif %}>A</option>
+                                    <option value="AAAA" {% if domain.primary_type == 'AAAAA' %}selected{% endif %}>AAAAA</option>
+                                    <option value="CNAME" {% if domain.primary_type == 'CNAME' %}selected{% endif %}>CNAME</option>
                                 </select>
+                                <input type="text" class="form-control" id="primary_ip{{ domain.id }}" name="primary_ip" value="{{ domain.primary_ip or '' }}" placeholder="192.168.1.1">
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="primary_ipv6{{ domain.id }}" class="form-label">IPv6</label>
-                                <input type="text" class="form-control" id="primary_ipv6{{ domain.id }}" name="primary_ipv6" value="{{ domain.primary_ipv6 or '' }}" placeholder="2001:db8::1">
-                                <select class="form-select mt-1" name="primary_ipv6_type">
-                                    <option value="A" {% if domain.primary_ipv6_type == 'A' %}selected{% endif %}>A</option>
-                                    <option value="AAAA" {% if domain.primary_ipv6_type == 'AAAA' %}selected{% endif %}>AAAA</option>
-                                    <option value="CNAME" {% if domain.primary_ipv6_type == 'CNAME' %}selected{% endif %}>CNAME</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    
+                          </div>
+
                     <hr>
                     <h6><i class="fas fa-server text-warning"></i> Link Secundário</h6>
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-3">
                             <div class="mb-3">
-                                <label for="secondary_ipv4{{ domain.id }}" class="form-label">IPv4</label>
-                                <input type="text" class="form-control" id="secondary_ipv4{{ domain.id }}" name="secondary_ipv4" value="{{ domain.secondary_ipv4 or '' }}" placeholder="192.168.1.2">
-                                <select class="form-select mt-1" name="secondary_ipv4_type">
-                                    <option value="A" {% if domain.secondary_ipv4_type == 'A' %}selected{% endif %}>A</option>
-                                    <option value="AAAA" {% if domain.secondary_ipv4_type == 'AAAAA' %}selected{% endif %}>AAAAA</option>
-                                    <option value="CNAME" {% if domain.secondary_ipv4_type == 'CNAME' %}selected{% endif %}>CNAME</option>
+                                <label for="secondary_ip{{ domain.id }}" class="form-label">IP Address</label>
+                                <select class="form-select mt-1" name="secondary_type">
+                                    <option value="A" {% if domain.secondary_type == 'A' %}selected{% endif %}>A</option>
+                                    <option value="AAAA" {% if domain.secondary_type == 'AAAAA' %}selected{% endif %}>AAAAA</option>
+                                    <option value="CNAME" {% if domain.secondary_type == 'CNAME' %}selected{% endif %}>CNAME</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-9">
                             <div class="mb-3">
-                                <label for="secondary_ipv6{{ domain.id }}" class="form-label">IPv6</label>
-                                <input type="text" class="form-control" id="secondary_ipv6{{ domain.id }}" name="secondary_ipv6" value="{{ domain.secondary_ipv6 or '' }}" placeholder="2001:db8::2">
-                                <select class="form-select mt-1" name="secondary_ipv6_type">
-                                    <option value="A" {% if domain.secondary_ipv6_type == 'A' %}selected{% endif %}>A</option>
-                                    <option value="AAAA" {% if domain.secondary_ipv6_type == 'AAAA' %}selected{% endif %}>AAAA</option>
-                                    <option value="CNAME" {% if domain.secondary_ipv6_type == 'CNAME' %}selected{% endif %}>CNAME</option>
-                                </select>
+                                <label for="secondary_ip{{ domain.id }}" class="form-label">IP Address</label>
+                                <input type="text" class="form-control" id="secondary_ip{{ domain.id }}" name="secondary_ip" value="{{ domain.secondary_ip or '' }}" placeholder="192.168.1.2">
                             </div>
                         </div>
                     </div>
