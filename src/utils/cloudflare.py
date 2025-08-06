@@ -67,15 +67,20 @@ class CloudflareAPI:
         else:
             return None
 
-    def create_dns_record(self, name: str, record_type: str, content: str,
-                          ttl: int = 300, proxied: bool = False) -> Dict:
+    """
+    DNS/RECORD - CREATE
+    """
+
+    def create_dns_record(self, domain: str, record_type: str, content: str,
+                          ttl: int = 300, proxied: bool = False, comment: str = None) -> Dict:
         """Cria um novo registro DNS"""
         endpoint = f"/zones/{self.zone_id}/dns_records"
 
         data = {
             "type": record_type,
-            "name": name,
+            "name": domain,
             "content": content,
+            "comment": comment,
             "ttl": ttl,
             "proxied": proxied
         }
@@ -86,6 +91,10 @@ class CloudflareAPI:
             return response.get('result')
         else:
             raise Exception(f"Erro ao criar registro DNS: {response.get('errors', [])}")
+
+    """
+    DNS/RECORD - UPDATE
+    """
 
     def update_dns_record(self, record_id: str, name: str, record_type: str,
                           content: str, ttl: int = 300, proxied: bool = False) -> Dict:
