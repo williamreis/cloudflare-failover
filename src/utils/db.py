@@ -19,7 +19,7 @@ class Database:
 
             # Tabela de domínios
             cursor.execute('''
-                CREATE TABLE IF NOT EXISTS domains (
+                CREATE TABLE IF NOT EXISTS domain (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     domain_name TEXT NOT NULL UNIQUE,
                     ttl INTEGER DEFAULT 300,
@@ -41,7 +41,7 @@ class Database:
                     is_active BOOLEAN DEFAULT 1,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (domain_id) REFERENCES domains (id) ON DELETE CASCADE,
+                    FOREIGN KEY (domain_id) REFERENCES domain (id) ON DELETE CASCADE,
                     UNIQUE(domain_id, link_type)
                 )
             ''')
@@ -57,7 +57,7 @@ class Database:
                     status TEXT NOT NULL,
                     message TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (domain_id) REFERENCES domains (id) ON DELETE CASCADE,
+                    FOREIGN KEY (domain_id) REFERENCES domain (id) ON DELETE CASCADE,
                     FOREIGN KEY (dns_from_id) REFERENCES domain_dns (id),
                     FOREIGN KEY (dns_to_id) REFERENCES domain_dns (id)
                 )
@@ -81,7 +81,7 @@ class Database:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO domains (domain_name, record_type, ttl)
+                INSERT INTO domain (domain_name, record_type, ttl)
                 VALUES (?, ?, ?)
             ''', (domain_name, record_type, ttl))
             conn.commit()
@@ -108,7 +108,7 @@ class Database:
                 SELECT d.*, 
                        p.id as primary_id, p.ipaddress as primary_ipv4, p.hostname as primary_hostname,
                        s.id as secondary_id, s.ipaddress as secondary_ipv4, s.hostname as secondary_hostname
-                FROM domains d
+                FROM domain d
                 LEFT JOIN domain_dns p ON d.id = p.domain_id AND p.link_type = 'primary'
                 LEFT JOIN domain_dns s ON d.id = s.domain_id AND s.link_type = 'secondary'
                 ORDER BY d.domain_name
@@ -127,7 +127,7 @@ class Database:
                 SELECT d.*, 
                        p.id as primary_id, p.ipaddress as primary_ipv4, p.hostname as primary_hostname,
                        s.id as secondary_id, s.ipaddress as secondary_ipv4, s.hostname as secondary_hostname
-                FROM domains d
+                FROM domain d
                 LEFT JOIN domain_dns p ON d.id = p.domain_id AND p.link_type = 'primary'
                 LEFT JOIN domain_dns s ON d.id = s.domain_id AND s.link_type = 'secondary'
                 WHERE d.id = ?
@@ -141,7 +141,7 @@ class Database:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                UPDATE domains 
+                UPDATE domain 
                 SET domain_name = ?, record_type = ?, ttl = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
             ''', (domain_name, record_type, ttl, domain_id))
@@ -162,7 +162,7 @@ class Database:
         """Deleta um domínio e todos os seus dns"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
-            cursor.execute('DELETE FROM domains WHERE id = ?', (domain_id,))
+            cursor.execute('DELETE FROM domain WHERE id = ?', (domain_id,))
             conn.commit()
 
     def add_change_log(self, domain_id: int, dns_from_id: int, dns_to_id: int,
@@ -185,7 +185,7 @@ class Database:
             cursor.execute('''
                 SELECT cl.*, d.domain_name
                 FROM change_logs cl
-                JOIN domains d ON cl.domain_id = d.id
+                JOIN domain d ON cl.domain_id = d.id
                 ORDER BY cl.created_at DESC
                 LIMIT ?
             ''', (limit,))
