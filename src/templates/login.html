@@ -1,36 +1,344 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Cloudflare Failover Manager{% endblock %}</title>
+    <link id="theme-css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.2/dist/darkly/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --sidebar-width: 280px;
+            --header-height: 60px;
+        }
 
-{% block title %}Login - Cloudflare Failover{% endblock %}
+        body {
+            background: #f5f7fb;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
 
-{% block content %}
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-xl-10 col-lg-12 col-md-9">
-            <div class="card o-hidden border-0 shadow-lg my-5">
-                <div class="card-body p-0">
-                    <div class="row">
-                        <div class="col-lg-6 d-none d-lg-block bg-login-image"></div>
-                        <div class="col-lg-6">
-                            <div class="p-5">
-                                <div class="text-center">
-                                    <h1 class="h4 text-gray-900 mb-4">Bem-vindo ao Cloudflare Failover</h1>
-                                </div>
-                                <form class="user" method="POST">
-                                    <div class="form-group">
-                                        <input type="text" class="form-control form-control-user" name="username" placeholder="Usuário" required>
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: var(--sidebar-width);
+            background: #fff;
+            border-right: 1px solid #e3e6f0;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        }
+
+        .sidebar-brand {
+            height: var(--header-height);
+            display: flex;
+            align-items: center;
+            padding: 0 1.5rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #5a5c69;
+            text-decoration: none;
+            border-bottom: 1px solid #e3e6f0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .sidebar-nav {
+            padding: 1rem 0;
+        }
+
+        .nav-item {
+            margin: 0.25rem 1rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            color: #858796;
+            text-decoration: none;
+            border-radius: 0.35rem;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: #4e73df;
+            background: #eaecf4;
+            transform: translateX(5px);
+        }
+
+        .nav-link i {
+            width: 1.25rem;
+            margin-right: 0.5rem;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            background: #f5f7fb;
+        }
+
+        /* Header */
+        .topbar {
+            height: var(--header-height);
+            background: #fff;
+            border-bottom: 1px solid #e3e6f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        }
+
+        .topbar-divider {
+            width: 0;
+            border-right: 1px solid #e3e6f0;
+            height: 2rem;
+            margin: auto 1rem;
+        }
+
+        /* Content Area */
+        .container-fluid {
+            padding: 1.5rem;
+        }
+
+        /* Cards */
+        .card {
+            border: none;
+            border-radius: 0.35rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0.5rem 2rem 0 rgba(58, 59, 69, 0.2);
+        }
+
+        .card-header {
+            background: #f8f9fc;
+            border-bottom: 1px solid #e3e6f0;
+            font-weight: 700;
+            color: #5a5c69;
+        }
+
+        /* Stats Cards */
+        .stats-card {
+            border-left: 0.25rem solid;
+            border-radius: 0.35rem;
+            transition: transform 0.2s ease;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .stats-card.primary { border-left-color: #4e73df; }
+        .stats-card.success { border-left-color: #1cc88a; }
+        .stats-card.warning { border-left-color: #f6c23e; }
+        .stats-card.danger { border-left-color: #e74a3b; }
+        .stats-card.info { border-left-color: #36b9cc; }
+
+        /* Buttons */
+        .btn {
+            border-radius: 0.35rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        /* Tables */
+        .table {
+            border-radius: 0.35rem;
+            overflow: hidden;
+        }
+
+        .table thead th {
+            background: #f8f9fc;
+            border-bottom: 2px solid #e3e6f0;
+            font-weight: 700;
+            color: #5a5c69;
+        }
+
+        /* Badges */
+        .badge {
+            font-weight: 500;
+            padding: 0.5em 0.75em;
+        }
+
+        /* Modals */
+        .modal-content {
+            border: none;
+            border-radius: 0.35rem;
+            box-shadow: 0 0.5rem 2rem 0 rgba(58, 59, 69, 0.3);
+        }
+
+        .modal-header {
+            background: #f8f9fc;
+            border-bottom: 1px solid #e3e6f0;
+        }
+
+        /* Forms */
+        .form-control, .form-select {
+            border-radius: 0.35rem;
+            border: 1px solid #d1d3e2;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #4e73df;
+            box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+        }
+
+        /* Alerts */
+        .alert {
+            border: none;
+            border-radius: 0.35rem;
+            border-left: 0.25rem solid;
+        }
+
+        .alert-success { border-left-color: #1cc88a; }
+        .alert-danger { border-left-color: #e74a3b; }
+        .alert-warning { border-left-color: #f6c23e; }
+        .alert-info { border-left-color: #36b9cc; }
+
+        /* Dropdowns */
+        .dropdown-menu {
+            border: none;
+            border-radius: 0.35rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        }
+
+        /* Animations */
+        .animated--fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+        }
+
+        /* Dark theme adjustments */
+        body.dark-theme {
+            background: #181c20;
+        }
+
+        body.dark-theme .sidebar {
+            background: #23272b;
+            border-right-color: #444;
+        }
+
+        body.dark-theme .topbar {
+            background: #23272b;
+            border-bottom-color: #444;
+        }
+
+        body.dark-theme .card {
+            background: #23272b;
+            color: #fff;
+        }
+
+        body.dark-theme .card-header {
+            background: #2c3136;
+            border-bottom-color: #444;
+            color: #fff;
+        }
+
+        body.dark-theme .table thead th {
+            background: #2c3136;
+            color: #fff;
+        }
+
+        body.dark-theme .form-control,
+        body.dark-theme .form-select {
+            background: #23272b;
+            color: #fff;
+            border-color: #444;
+        }
+
+        body.dark-theme .modal-content {
+            background: #23272b;
+            color: #fff;
+        }
+
+        body.dark-theme .modal-header {
+            background: #2c3136;
+            border-bottom-color: #444;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body>
+
+    {% block content %}
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-xl-10 col-lg-12 col-md-9">
+                <div class="card o-hidden border-0 shadow-lg my-5">
+                    <div class="card-body p-0">
+                        <div class="row">
+                            <div class="col-lg-6 d-none d-lg-block bg-login-image"></div>
+                            <div class="col-lg-6">
+                                <div class="p-5">
+                                    <div class="text-center">
+                                        <h1 class="h4 text-gray-900 mb-4">Bem-vindo ao Cloudflare Failover</h1>
                                     </div>
-                                    <div class="form-group">
-                                        <input type="password" class="form-control form-control-user" name="password" placeholder="Senha" required>
+                                    <form class="user" method="POST">
+                                        <div class="form-group">
+                                            <input type="text" class="form-control form-control-user" name="username" placeholder="Usuário" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="password" class="form-control form-control-user" name="password" placeholder="Senha" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary btn-user btn-block">
+                                            Entrar
+                                        </button>
+                                    </form>
+                                    {% if error %}
+                                    <div class="alert alert-danger mt-3" role="alert">
+                                        {{ error }}
                                     </div>
-                                    <button type="submit" class="btn btn-primary btn-user btn-block">
-                                        Entrar
-                                    </button>
-                                </form>
-                                {% if error %}
-                                <div class="alert alert-danger mt-3" role="alert">
-                                    {{ error }}
+                                    {% endif %}
                                 </div>
-                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -38,5 +346,6 @@
             </div>
         </div>
     </div>
-</div>
-{% endblock %} 
+    {% endblock %}
+</body>
+</html>
