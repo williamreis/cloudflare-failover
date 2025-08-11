@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciar Domínios - Cloudflare Failover{% endblock %}
+
+{% block content %}
+<!-- Page Heading -->
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Gerenciar Domínios</h1>
+    <button class="d-none d-sm-inline-block btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addDomainModal">
+        <i class="fas fa-plus fa-sm text-white-50"></i> Adicionar Domínio
+    </button>
+</div>
+
+<!-- Content Row -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Lista de Domínios</h6>
+                <div class="dropdown no-arrow">
+                    <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown">
+                        <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in">
+                        <div class="dropdown-header">Ações:</div>
+                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addDomainModal">
+                            <i class="fas fa-plus fa-sm fa-fw mr-2 text-gray-400"></i>
+                            Adicionar Domínio
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="/logs">
+                            <i class="fas fa-list fa-sm fa-fw mr-2 text-gray-400"></i>
+                            Ver Logs
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if domains %}
+                <div class="table-responsive">
+                    <table class="table table-bordered" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Domínio</th>
+                                <th>Tipo</th>
+                                <th>TTL</th>
+                                <th>Link Primário</th>
+                                <th>Link Secundário</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for domain in domains %}
+                            <tr>
+                                <td>
+                                    <strong>{{ domain.hostname }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">{{ domain.record_type }}</span>
+                                </td>
+                                <td>{{ domain.ttl }}s</td>
+                                <td>
+                                    {% if domain.primary_ip %}
+                                        <div class="small">
+                                            <i class="fas fa-server text-success"></i> {{ domain.primary_ip }}
+                                        </div>
+                                    {% endif %}
+                                    {% if domain.primary_hostname %}
+                                        <div class="small">
+                                            <i class="fas fa-link text-success"></i> {{ domain.primary_hostname }}
+                                        </div>
+                                    {% endif %}
+                                    {% if not domain.primary_ip and not domain.primary_hostname %}
+                                        <span class="text-muted small">Não configurado</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if domain.secondary_ip %}
+                                        <div class="small">
+                                            <i class="fas fa-server text-warning"></i> {{ domain.secondary_ip }}
+                                        </div>
+                                    {% endif %}
+                                     {% if domain.secondary_hostname %}
+                                        <div class="small">
+                                            <i class="fas fa-link text-warning"></i> {{ domain.secondary_hostname }}
+                                        </div>
+                                    {% endif %}
+                                    {% if not domain.secondary_ip and not domain.secondary_hostname %}
+                                        <span class="text-muted small">Não configurado</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if domain.primary_active %}
+                                        <span class="badge bg-success">Primário Ativo</span>
+                                    {% elif domain.secondary_active %}
+                                        <span class="badge bg-warning">Secundário Ativo</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inativo</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editDomainModal{{ domain.id }}">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteDomainModal{{ domain.id }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        <form action="{{ url_for('domain.switch_ip', domain_id=domain.id) }}" method="post" style="display:inline;">
+                                            <button class="btn btn-sm btn-warning" type="submit" title="Alternar IP primário/secundário">
+                                                <i class="fas fa-exchange-alt"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-globe fa-3x text-gray-300 mb-3"></i>
+                    <p class="text-gray-500">Nenhum domínio cadastrado ainda.</p>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addDomainModal">
+                        <i class="fas fa-plus"></i> Adicionar Primeiro Domínio
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Domain Modal -->
+<div class="modal fade" id="addDomainModal" tabindex="-1" aria-labelledby="addDomainModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addDomainModalLabel">
+                    <i class="fas fa-plus"></i> Adicionar Novo Domínio
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-9">
+                            <div class="mb-3">
+                                <label for="hostname" class="form-label">Nome do Domínio *</label>
+                                <input type="text" class="form-control" id="hostname" name="hostname" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="ttl" class="form-label">TTL (segundos)</label>
+                                <input type="number" class="form-control" id="ttl" name="ttl" value="300" min="60" max="86400">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <label for="ttl" class="form-label">Comentário</label>
+                            <input type="text" class="form-control mt-1" name="comment" placeholder="Comentário">
+                        </div>
+                    </div>
+                    <hr>
+                    <h6><i class="fas fa-server text-success"></i> Link Primário</h6>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="primary_ip" class="form-label">Tipo</label>
+                                <select class="form-select mt-1" name="primary_type">
+                                    <option value="A">A</option>
+                                    <option value="AAAA">AAAA</option>
+                                    <option value="CNAME">CNAME</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <div class="mb-3">
+                                <label for="primary_ip" class="form-label">IP Address</label>
+                                <input type="text" class="form-control" id="primary_ip" name="primary_ip" placeholder="192.168.1.1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+                    <h6><i class="fas fa-server text-warning"></i> Link Secundário</h6>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="secondary_ip" class="form-label">Tipo</label>
+                                <select class="form-select mt-1" name="secondary_type">
+                                    <option value="A">A</option>
+                                    <option value="AAAA">AAAA</option>
+                                    <option value="CNAME">CNAME</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <div class="mb-3">
+                                <label for="secondary_ip" class="form-label">IP Address</label>
+                                <input type="text" class="form-control" id="secondary_ip" name="secondary_ip" placeholder="192.168.1.2">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Salvar Domínio
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Domain Modals -->
+{% for domain in domains %}
+<div class="modal fade" id="editDomainModal{{ domain.id }}" tabindex="-1" aria-labelledby="editDomainModalLabel{{ domain.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editDomainModalLabel{{ domain.id }}">
+                    <i class="fas fa-edit"></i> Editar Domínio: {{ domain.hostname }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="/domains/edit/{{ domain.id }}">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-9">
+                            <div class="mb-3">
+                                <label for="hostname{{ domain.id }}" class="form-label">Nome do Domínio *</label>
+                                <input type="text" class="form-control" id="hostname{{ domain.id }}" name="hostname" value="{{ domain.hostname }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="ttl{{ domain.id }}" class="form-label">TTL (segundos)</label>
+                                <input type="number" class="form-control" id="ttl{{ domain.id }}" name="ttl" value="{{ domain.ttl }}" min="60" max="86400">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <label for="ttl" class="form-label">Comentário</label>
+                            <input type="text" class="form-control mt-1" name="comment" value="{{ domain.comment or '' }}" placeholder="Comentário">
+                        </div>
+                    </div>
+                    <hr>
+                    <h6><i class="fas fa-server text-success"></i> Link Primário</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="primary_ip{{ domain.id }}" class="form-label">IP Address</label>
+                                <select class="form-select mt-1" name="primary_type">
+                                    <option value="A" {% if domain.primary_type == 'A' %}selected{% endif %}>A</option>
+                                    <option value="AAAA" {% if domain.primary_type == 'AAAAA' %}selected{% endif %}>AAAAA</option>
+                                    <option value="CNAME" {% if domain.primary_type == 'CNAME' %}selected{% endif %}>CNAME</option>
+                                </select>
+                                <input type="text" class="form-control" id="primary_ip{{ domain.id }}" name="primary_ip" value="{{ domain.primary_ip or '' }}" placeholder="192.168.1.1">
+                            </div>
+                        </div>
+                          </div>
+
+                    <hr>
+                    <h6><i class="fas fa-server text-warning"></i> Link Secundário</h6>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="secondary_ip{{ domain.id }}" class="form-label">IP Address</label>
+                                <select class="form-select mt-1" name="secondary_type">
+                                    <option value="A" {% if domain.secondary_type == 'A' %}selected{% endif %}>A</option>
+                                    <option value="AAAA" {% if domain.secondary_type == 'AAAAA' %}selected{% endif %}>AAAAA</option>
+                                    <option value="CNAME" {% if domain.secondary_type == 'CNAME' %}selected{% endif %}>CNAME</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <div class="mb-3">
+                                <label for="secondary_ip{{ domain.id }}" class="form-label">IP Address</label>
+                                <input type="text" class="form-control" id="secondary_ip{{ domain.id }}" name="secondary_ip" value="{{ domain.secondary_ip or '' }}" placeholder="192.168.1.2">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Atualizar Domínio
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Domain Modal -->
+<div class="modal fade" id="deleteDomainModal{{ domain.id }}" tabindex="-1" aria-labelledby="deleteDomainModalLabel{{ domain.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteDomainModalLabel{{ domain.id }}">
+                    <i class="fas fa-exclamation-triangle text-danger"></i> Confirmar Exclusão
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir o domínio <strong>{{ domain.hostname }}</strong>?</p>
+                <p class="text-danger"><small>Esta ação não pode ser desfeita e também removerá o registro DNS do Cloudflare.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="POST" action="/domains/delete/{{ domain.id }}" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Excluir Domínio
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %} 

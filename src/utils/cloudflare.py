@@ -42,12 +42,12 @@ class CloudflareAPI:
         except requests.exceptions.RequestException as e:
             raise Exception(f"Erro na requisição para Cloudflare: {str(e)}")
 
-    def get_dns_records(self, domain_name: str = None) -> List[Dict]:
+    def get_dns_records(self, hostname: str = None) -> List[Dict]:
         """Lista todos os registros DNS ou filtra por domínio"""
         endpoint = f"/zones/{self.zone_id}/dns_records"
 
-        if domain_name:
-            endpoint += f"?name={domain_name}"
+        if hostname:
+            endpoint += f"?name={hostname}"
 
         response = self.make_request('GET', endpoint)
 
@@ -137,15 +137,15 @@ class CloudflareAPI:
 
         return None
 
-    def update_domain_to_secondary(self, domain_name: str, record_type: str,
+    def update_domain_to_secondary(self, hostname: str, record_type: str,
                                    secondary_ipv4: str = None, secondary_ipv6: str = None,
                                    secondary_hostname: str = None) -> Dict:
         """Atualiza um domínio para usar o link secundário"""
         # Encontrar o registro atual
-        current_record = self.find_dns_record(domain_name, record_type)
+        current_record = self.find_dns_record(hostname, record_type)
 
         if not current_record:
-            raise Exception(f"Registro DNS não encontrado para {domain_name} ({record_type})")
+            raise Exception(f"Registro DNS não encontrado para {hostname} ({record_type})")
 
         # Determinar o conteúdo baseado no tipo de record e dados secundários
         if record_type == 'A' and secondary_ipv4:
@@ -160,22 +160,22 @@ class CloudflareAPI:
         # Atualizar o registro
         return self.update_dns_record(
             record_id=current_record['id'],
-            name=domain_name,
+            name=hostname,
             record_type=record_type,
             content=new_content,
             ttl=current_record.get('ttl', 300),
             proxied=current_record.get('proxied', False)
         )
 
-    def update_domain_to_primary(self, domain_name: str, record_type: str,
+    def update_domain_to_primary(self, hostname: str, record_type: str,
                                  primary_ipv4: str = None, primary_ipv6: str = None,
                                  primary_hostname: str = None) -> Dict:
         """Atualiza um domínio para usar o link primário"""
         # Encontrar o registro atual
-        current_record = self.find_dns_record(domain_name, record_type)
+        current_record = self.find_dns_record(hostname, record_type)
 
         if not current_record:
-            raise Exception(f"Registro DNS não encontrado para {domain_name} ({record_type})")
+            raise Exception(f"Registro DNS não encontrado para {hostname} ({record_type})")
 
         # Determinar o conteúdo baseado no tipo de record e dados primários
         if record_type == 'A' and primary_ipv4:
@@ -190,7 +190,7 @@ class CloudflareAPI:
         # Atualizar o registro
         return self.update_dns_record(
             record_id=current_record['id'],
-            name=domain_name,
+            name=hostname,
             record_type=record_type,
             content=new_content,
             ttl=current_record.get('ttl', 300),

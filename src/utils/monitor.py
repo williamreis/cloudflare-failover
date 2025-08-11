@@ -79,7 +79,7 @@ class LinkMonitor:
 
         return {
             'domain_id': domain_data['id'],
-            'domain_name': domain_data['domain_name'],
+            'hostname': domain_data['hostname'],
             'primary_online': primary_online,
             'secondary_online': secondary_online,
             'timestamp': datetime.now()
@@ -98,7 +98,7 @@ class LinkMonitor:
     def execute_failover(self, domain_data: Dict) -> bool:
         """Executa o failover para o link secundário"""
         try:
-            self.logger.info(f"Iniciando failover para {domain_data['domain_name']}")
+            self.logger.info(f"Iniciando failover para {domain_data['hostname']}")
 
             # Determinar o conteúdo baseado no tipo de record
             record_type = domain_data['record_type']
@@ -117,7 +117,7 @@ class LinkMonitor:
 
             # Atualizar DNS no Cloudflare
             result = self.cloudflare.update_domain_to_secondary(
-                domain_name=domain_data['domain_name'],
+                hostname=domain_data['hostname'],
                 record_type=record_type,
                 secondary_ipv4=domain_data.get('secondary_ipv4'),
                 secondary_ipv6=domain_data.get('secondary_ipv6'),
@@ -134,11 +134,11 @@ class LinkMonitor:
                 message=f"Failover executado para {secondary_content}"
             )
 
-            self.logger.info(f"Failover executado com sucesso para {domain_data['domain_name']}")
+            self.logger.info(f"Failover executado com sucesso para {domain_data['hostname']}")
             return True
 
         except Exception as e:
-            self.logger.error(f"Erro no failover para {domain_data['domain_name']}: {str(e)}")
+            self.logger.error(f"Erro no failover para {domain_data['hostname']}: {str(e)}")
 
             # Registrar log de erro
             self.db.add_change_log(
@@ -154,7 +154,7 @@ class LinkMonitor:
     def execute_failback(self, domain_data: Dict) -> bool:
         """Executa o failback para o link primário"""
         try:
-            self.logger.info(f"Iniciando failback para {domain_data['domain_name']}")
+            self.logger.info(f"Iniciando failback para {domain_data['hostname']}")
 
             # Determinar o conteúdo baseado no tipo de record
             record_type = domain_data['record_type']
@@ -173,7 +173,7 @@ class LinkMonitor:
 
             # Atualizar DNS no Cloudflare
             result = self.cloudflare.update_domain_to_primary(
-                domain_name=domain_data['domain_name'],
+                hostname=domain_data['hostname'],
                 record_type=record_type,
                 primary_ipv4=domain_data.get('primary_ipv4'),
                 primary_ipv6=domain_data.get('primary_ipv6'),
@@ -190,11 +190,11 @@ class LinkMonitor:
                 message=f"Failback executado para {primary_content}"
             )
 
-            self.logger.info(f"Failback executado com sucesso para {domain_data['domain_name']}")
+            self.logger.info(f"Failback executado com sucesso para {domain_data['hostname']}")
             return True
 
         except Exception as e:
-            self.logger.error(f"Erro no failback para {domain_data['domain_name']}: {str(e)}")
+            self.logger.error(f"Erro no failback para {domain_data['hostname']}: {str(e)}")
 
             # Registrar log de erro
             self.db.add_change_log(

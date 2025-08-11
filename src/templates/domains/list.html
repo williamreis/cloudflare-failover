@@ -54,7 +54,7 @@
                             {% for domain in domains %}
                             <tr>
                                 <td>
-                                    <strong>{{ domain.domain_name }}</strong>
+                                    <strong>{{ domain.hostname }}</strong>
                                 </td>
                                 <td>
                                     <span class="badge bg-primary">{{ domain.record_type }}</span>
@@ -107,7 +107,7 @@
                                         <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteDomainModal{{ domain.id }}">
                                             <i class="fas fa-trash"></i>
                                         </button>
-                                        <form action="{{ url_for('switch_ip', domain_id=domain.id) }}" method="post" style="display:inline;">
+                                        <form action="{{ url_for('domain.switch_ip', domain_id=domain.id) }}" method="post" style="display:inline;">
                                             <button class="btn btn-sm btn-warning" type="submit" title="Alternar IP primário/secundário">
                                                 <i class="fas fa-exchange-alt"></i>
                                             </button>
@@ -148,8 +148,8 @@
                     <div class="row">
                         <div class="col-md-9">
                             <div class="mb-3">
-                                <label for="domain_name" class="form-label">Nome do Domínio *</label>
-                                <input type="text" class="form-control" id="domain_name" name="domain_name" required>
+                                <label for="hostname" class="form-label">Nome do Domínio *</label>
+                                <input type="text" class="form-control" id="hostname" name="hostname" required>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -225,7 +225,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="editDomainModalLabel{{ domain.id }}">
-                    <i class="fas fa-edit"></i> Editar Domínio: {{ domain.domain_name }}
+                    <i class="fas fa-edit"></i> Editar Domínio1: {{ domain.hostname }}
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -234,8 +234,8 @@
                     <div class="row">
                         <div class="col-md-9">
                             <div class="mb-3">
-                                <label for="domain_name{{ domain.id }}" class="form-label">Nome do Domínio *</label>
-                                <input type="text" class="form-control" id="domain_name{{ domain.id }}" name="domain_name" value="{{ domain.domain_name }}" required>
+                                <label for="hostname{{ domain.id }}" class="form-label">Nome do Domínio *</label>
+                                <input type="text" class="form-control" id="hostname{{ domain.id }}" name="hostname" value="{{ domain.hostname }}" required>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -310,7 +310,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p>Tem certeza que deseja excluir o domínio <strong>{{ domain.domain_name }}</strong>?</p>
+                <p>Tem certeza que deseja excluir o domínio <strong>{{ domain.hostname }}</strong>?</p>
                 <p class="text-danger"><small>Esta ação não pode ser desfeita e também removerá o registro DNS do Cloudflare.</small></p>
             </div>
             <div class="modal-footer">

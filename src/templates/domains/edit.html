@@ -5,7 +5,7 @@
 <form method="post" class="mb-4">
     <div class="row g-2 mb-2">
         <div class="col-md-9">
-            <input type="text" name="domain_name" class="form-control" placeholder="Nome do Domínio" value="{{ domain.domain_name }}" required>
+            <input type="text" name="hostname" class="form-control" placeholder="Nome do Domínio" value="{{ domain.hostname }}" required>
         </div>
         <div class="col-md-3">
             <input type="number" name="ttl" class="form-control" placeholder="TTL" value="{{ domain.ttl }}" min="60" max="86400">
@@ -41,7 +41,7 @@
     <div class="row g-2 mb-2">
         <div class="col-md-2">
             <button type="submit" class="btn btn-success">Salvar</button>
-            <a href="{{ url_for('manage_domains') }}" class="btn btn-secondary">Cancelar</a>
+            <a href="{{ url_for('domain.manage_domains') }}" class="btn btn-secondary">Cancelar</a>
         </div>
     </div>
 </form>

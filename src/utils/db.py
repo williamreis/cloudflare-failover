@@ -21,7 +21,7 @@ class Database:
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS domain (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    domain_name TEXT NOT NULL UNIQUE,
+                    hostname TEXT NOT NULL UNIQUE,
                     ttl INTEGER DEFAULT 300,
                     comment TEXT NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -34,7 +34,7 @@ class Database:
                 CREATE TABLE IF NOT EXISTS domain_dns (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     domain_id INTEGER NOT NULL,
-                    link_type TEXT NOT NULL CHECK (link_type IN ('primary', 'secondary')),
+                    dns_type TEXT NOT NULL CHECK (dns_type IN ('primary', 'secondary')),
                     ipaddress TEXT,
                     hostname TEXT,
                     record_type TEXT,
@@ -42,7 +42,7 @@ class Database:
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (domain_id) REFERENCES domain (id) ON DELETE CASCADE,
-                    UNIQUE(domain_id, link_type)
+                    UNIQUE(domain_id, dns_type)
                 )
             ''')
 
@@ -76,25 +76,25 @@ class Database:
 
             conn.commit()
 
-    def add_domain(self, domain_name: str, comment: str = None, ttl: int = 300) -> int:
+    def add_domain(self, hostname: str, comment: str = None, ttl: int = 300) -> int:
         """Adiciona um novo domínio"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO domain (domain_name, comment, ttl)
+                INSERT INTO domain (hostname, comment, ttl)
                 VALUES (?, ?, ?)
-            ''', (domain_name, comment, ttl))
+            ''', (hostname, comment, ttl))
             conn.commit()
             return cursor.lastrowid
 
-    def add_dns(self, domain_id: int, link_type: str, ipaddress: str = None, hostname: str = None, record_type: str = 'A') -> int:
+    def add_dns(self, domain_id: int, dns_type: str, ipaddress: str = None, hostname: str = None, record_type: str = 'A') -> int:
         """Adiciona um link (primário ou secundário) para um domínio"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO domain_dns (domain_id, link_type, ipaddress, hostname, record_type)
+                INSERT INTO domain_dns (domain_id, dns_type, ipaddress, hostname, record_type)
                 VALUES (?, ?, ?, ?, ?)
-            ''', (domain_id, link_type, ipaddress, hostname, record_type))
+            ''', (domain_id, dns_type, ipaddress, hostname, record_type))
             conn.commit()
             return cursor.lastrowid
 
@@ -106,12 +106,12 @@ class Database:
 
             cursor.execute('''
                 SELECT d.*, 
-                       p.id as primary_id, p.ipaddress as primary_ipv4, p.hostname as primary_hostname,
-                       s.id as secondary_id, s.ipaddress as secondary_ipv4, s.hostname as secondary_hostname
+                       p.id as primary_id, p.ipaddress as primary_ip, p.hostname as primary_hostname,
+                       s.id as secondary_id, s.ipaddress as secondary_ip, s.hostname as secondary_hostname
                 FROM domain d
-                LEFT JOIN domain_dns p ON d.id = p.domain_id AND p.link_type = 'primary'
-                LEFT JOIN domain_dns s ON d.id = s.domain_id AND s.link_type = 'secondary'
-                ORDER BY d.domain_name
+                LEFT JOIN domain_dns p ON d.id = p.domain_id AND p.dns_type = 'primary'
+                LEFT JOIN domain_dns s ON d.id = s.domain_id AND s.dns_type = 'secondary'
+                ORDER BY d.hostname
             ''')
 
             rows = cursor.fetchall()
@@ -128,23 +128,23 @@ class Database:
                        p.id as primary_id, p.ipaddress as primary_ipv4, p.hostname as primary_hostname,
                        s.id as secondary_id, s.ipaddress as secondary_ipv4, s.hostname as secondary_hostname
                 FROM domain d
-                LEFT JOIN domain_dns p ON d.id = p.domain_id AND p.link_type = 'primary'
-                LEFT JOIN domain_dns s ON d.id = s.domain_id AND s.link_type = 'secondary'
+                LEFT JOIN domain_dns p ON d.id = p.domain_id AND p.dns_type = 'primary'
+                LEFT JOIN domain_dns s ON d.id = s.domain_id AND s.dns_type = 'secondary'
                 WHERE d.id = ?
             ''', (domain_id,))
 
             row = cursor.fetchone()
             return dict(row) if row else None
 
-    def update_domain(self, domain_id: int, domain_name: str, comment: str = None, ttl: int = 300):
+    def update_domain(self, domain_id: int, hostname: str, comment: str = None, ttl: int = 300):
         """Atualiza um domínio"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute('''
                 UPDATE domain 
-                SET domain_name = ?, comment = ?, ttl = ?, updated_at = CURRENT_TIMESTAMP
+                SET hostname = ?, comment = ?, ttl = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
-            ''', (domain_name, comment, ttl, domain_id))
+            ''', (hostname, comment, ttl, domain_id))
             conn.commit()
 
     def update_dns(self, link_id: int, ipaddress: str = None, hostname: str = None, record_type: str = 'A'):
@@ -183,7 +183,7 @@ class Database:
             cursor = conn.cursor()
 
             cursor.execute('''
-                SELECT cl.*, d.domain_name
+                SELECT cl.*, d.hostname
                 FROM change_logs cl
                 JOIN domain d ON cl.domain_id = d.id
                 ORDER BY cl.created_at DESC
@@ -216,9 +216,9 @@ class Database:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             # Busca os dns primário e secundário
-            cursor.execute('SELECT id, ipaddress, hostname FROM domain_dns WHERE domain_id = ? AND link_type = "primary"', (domain_id,))
+            cursor.execute('SELECT id, ipaddress, hostname FROM domain_dns WHERE domain_id = ? AND dns_type = "primary"', (domain_id,))
             primary = cursor.fetchone()
-            cursor.execute('SELECT id, ipaddress, hostname FROM domain_dns WHERE domain_id = ? AND link_type = "secondary"', (domain_id,))
+            cursor.execute('SELECT id, ipaddress, hostname FROM domain_dns WHERE domain_id = ? AND dns_type = "secondary"', (domain_id,))
             secondary = cursor.fetchone()
             if not primary or not secondary:
                 raise Exception('Links primário e/ou secundário não encontrados para este domínio.')
